@@ -212,7 +212,7 @@ func main() {
 	}
 
 	// read tilejson
-	tileJson, tileMap, err := ParseTileJSON(args.TileJSON)
+	tileJSON, tileMap, err := ParseTileJSON(args.TileJSON)
 	if err != nil {
 		panic(err)
 	}
@@ -239,17 +239,17 @@ func main() {
 			zooms = append(zooms, intZoom)
 		}
 	} else {
-		zooms = make([]int, 0, tileJson.MaxZoom-tileJson.MinZoom+1)
-		for z := tileJson.MinZoom; z <= tileJson.MaxZoom; z++ {
+		zooms = make([]int, 0, tileJSON.MaxZoom-tileJSON.MinZoom+1)
+		for z := tileJSON.MinZoom; z <= tileJSON.MaxZoom; z++ {
 			zooms = append(zooms, z)
 		}
 	}
 	slices.Sort(zooms)
 	// reset min/max zoom to match requested output
-	tileJson.MinZoom = zooms[0]
-	tileJson.MaxZoom = zooms[len(zooms)-1]
+	tileJSON.MinZoom = zooms[0]
+	tileJSON.MaxZoom = zooms[len(zooms)-1]
 
-	tiles := listTiles(zooms, tileJson)
+	tiles := listTiles(zooms, tileJSON)
 	if args.TilesFile != "" {
 		extraTiles, err := tilesFromFile(args.TilesFile)
 		if err != nil {
@@ -261,7 +261,7 @@ func main() {
 	tileLen := len(tiles)
 	fmt.Printf("number of tiles: %d\n", tileLen)
 
-	writer, bulkWriter, close, err := NewWriters(args, tileJson)
+	writer, bulkWriter, close, err := NewWriters(args, tileJSON)
 	if err != nil {
 		panic(err)
 	}
