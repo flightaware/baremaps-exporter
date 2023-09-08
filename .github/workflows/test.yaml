@@ -1,0 +1,39 @@
+on: [push, workflow_dispatch]
+name: Tests
+jobs:
+  golang-test:
+    name: golang-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: FA setup for golang
+        uses: factions/setup-go@v1
+        with:
+          ssh_key: ${{ secrets.RUNNER_SSH_KEY }}
+          go_version: ${{ vars.GO_VERSION }}
+      - name: Test go app
+        run: |
+          make test-coverage
+          go tool cover -html=coverage.out -o coverage.html
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: golang-coverage-report
+          path: ./coverage.html
+  golang-lint:
+    name: golang-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: FA setup for golang
+        uses: factions/setup-go@v1
+        with:
+          ssh_key: ${{ secrets.RUNNER_SSH_KEY }}
+          go_version: ${{ vars.GO_VERSION }}
+      - name: check go fmt
+        run: |
+          make check-fmt
+      - name: install staticcheck
+        run: |
+          make install-lint
+      - name: lint with staticcheck
+        run: |
+          make lint
