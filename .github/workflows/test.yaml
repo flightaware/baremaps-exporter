@@ -5,35 +5,19 @@ jobs:
     name: golang-test
     runs-on: ubuntu-latest
     steps:
-      - name: FA setup for golang
-        uses: factions/setup-go@v1
+      - name: Setup golang
+        uses: actions/setup-go@v4
         with:
-          ssh_key: ${{ secrets.RUNNER_SSH_KEY }}
           go_version: ${{ vars.GO_VERSION }}
+      - name: Install staticcheck
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@2023.1
       - name: Test go app
         run: |
-          make test-coverage
-          go tool cover -html=coverage.out -o coverage.html
-      - name: Archive code coverage results
-        uses: actions/upload-artifact@v2
-        with:
-          name: golang-coverage-report
-          path: ./coverage.html
-  golang-lint:
-    name: golang-lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: FA setup for golang
-        uses: factions/setup-go@v1
-        with:
-          ssh_key: ${{ secrets.RUNNER_SSH_KEY }}
-          go_version: ${{ vars.GO_VERSION }}
+          go test ./...
       - name: check go fmt
         run: |
-          make check-fmt
-      - name: install staticcheck
-        run: |
-          make install-lint
+          test -z $(gofmt -l .)
       - name: lint with staticcheck
         run: |
-          make lint
+          staticcheck -checks all ./...
