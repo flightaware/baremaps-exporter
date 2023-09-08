@@ -8,7 +8,7 @@ require (
 	github.com/klauspost/compress v1.16.7
 	github.com/paulmach/orb v0.10.0
 	github.com/stretchr/testify v1.8.4
-	github.com/twpayne/go-mbtiles v0.0.0-20230824001319-b2b036ce9e05
+	github.com/twpayne/go-mbtiles v0.0.1
 	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
 )
 

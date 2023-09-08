@@ -26,7 +26,7 @@ var (
 )
 
 type Args struct {
-	TileJson   string `arg:"positional,required" help:"input tilejson file"`
+	TileJSON   string `arg:"positional,required" help:"input tilejson file"`
 	Output     string `arg:"-o,--output" help:"output file or directory"`
 	MbTiles    bool   `arg:"--mbtiles" help:"output mbtiles instead of files (automatically selected if output filename ends in '.mbtiles')"`
 	Dsn        string `arg:"-d,--dsn" help:"database connection string (dsn) for postgis"`
@@ -212,7 +212,7 @@ func main() {
 	}
 
 	// read tilejson
-	tileJson, tileMap, err := ParseTileJson(args.TileJson)
+	tileJson, tileMap, err := ParseTileJSON(args.TileJSON)
 	if err != nil {
 		panic(err)
 	}

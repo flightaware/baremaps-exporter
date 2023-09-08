@@ -154,7 +154,7 @@ func (w *MbTilesWriter) New() (TileWriter, func(), error) {
 }
 
 // NewWriters creates a TileWriter and TileBulkWriter based on the input arguments
-func NewWriters(args Args, tj *TileJson) (writer TileWriter, bulkWriter TileBulkWriter, close func(), err error) {
+func NewWriters(args Args, tj *TileJSON) (writer TileWriter, bulkWriter TileBulkWriter, close func(), err error) {
 	var mbWriter *MbTilesWriter
 	if args.Output == "" {
 		writer = &DummyWriter{}
@@ -171,7 +171,7 @@ func NewWriters(args Args, tj *TileJson) (writer TileWriter, bulkWriter TileBulk
 			return
 		}
 		meta := CreateMetadata(tj, CreateMetadataOptions{
-			Filename: args.TileJson,
+			Filename: args.TileJSON,
 			Version:  args.Version,
 		})
 		err = mbWriter.BulkWriteMetadata(meta)

@@ -18,7 +18,7 @@ type CreateMetadataOptions struct {
 
 // CreateMetadata generates the (name,value) metadata pairs for .mbtiles files.
 // Since name is required, it falls back to the filename if not provided.
-func CreateMetadata(tj *TileJson, opts CreateMetadataOptions) MbTilesMetadata {
+func CreateMetadata(tj *TileJSON, opts CreateMetadataOptions) MbTilesMetadata {
 	meta := MbTilesMetadata{
 		"name":   tj.Name,
 		"format": "pbf",
@@ -36,7 +36,7 @@ func CreateMetadata(tj *TileJson, opts CreateMetadataOptions) MbTilesMetadata {
 	if tj.Version != "" {
 		meta["version"] = tj.Version
 	}
-	// overwrite TileJson version with passed in version, since that might be set in the command line
+	// overwrite TileJSON version with passed in version, since that might be set in the command line
 	if opts.Version != "" {
 		meta["version"] = opts.Version
 	}
@@ -59,27 +59,27 @@ func CreateMetadata(tj *TileJson, opts CreateMetadataOptions) MbTilesMetadata {
 		}
 		meta["center"] = center
 	}
-	metaJsonField := CreateMetadataJson(tj)
-	if metaJsonBytes, err := json.Marshal(metaJsonField); err == nil {
-		meta["json"] = string(metaJsonBytes)
+	metaJSONField := CreateMetadataJSON(tj)
+	if metaJSONBytes, err := json.Marshal(metaJSONField); err == nil {
+		meta["json"] = string(metaJSONBytes)
 	}
 	return meta
 }
 
-// CreateMetadataJson generates a mbtiles MetadataJson object based on the TileJson input
-func CreateMetadataJson(tj *TileJson) *mbtiles.MetadataJson {
+// CreateMetadataJSON generates a mbtiles MetadataJson object based on the TileJSON input
+func CreateMetadataJSON(tj *TileJSON) *mbtiles.MetadataJson {
 	meta := mbtiles.MetadataJson{
-		VectorLayers: extractLayersFromTileJson(tj),
+		VectorLayers: extractLayersFromTileJSON(tj),
 	}
 	return &meta
 }
 
-func extractLayersFromTileJson(tj *TileJson) []mbtiles.MetadataJsonVectorLayer {
+func extractLayersFromTileJSON(tj *TileJSON) []mbtiles.MetadataJsonVectorLayer {
 	layers := make([]mbtiles.MetadataJsonVectorLayer, 0, len(tj.VectorLayers))
 	for _, layer := range tj.VectorLayers {
 		l := layer // create local variable copy
 		layer := mbtiles.MetadataJsonVectorLayer{
-			ID:     &l.Id,
+			ID:     &l.ID,
 			Fields: map[string]string{},
 		}
 		minzoom := -1

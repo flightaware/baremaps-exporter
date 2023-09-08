@@ -6,9 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseTileJson(t *testing.T) {
+func TestParseTileJSON(t *testing.T) {
 	assert := assert.New(t)
-	tj, lq, err := ParseTileJson("./testdata/tiles.json")
+	tj, lq, err := ParseTileJSON("./testdata/tiles.json")
 	assert.Nil(err)
 
 	assert.Equal(tj.Attribution, "for me")

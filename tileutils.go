@@ -27,7 +27,7 @@ type BoundingBox struct {
 	Bottom float64
 }
 
-func listTiles(zooms []int, tj *TileJson) []TileCoords {
+func listTiles(zooms []int, tj *TileJSON) []TileCoords {
 	tiles := make([]TileCoords, 0, 2<<zooms[len(zooms)-1])
 	for _, z := range zooms {
 		newTiles := tilesInBbox(BoundingBox{
