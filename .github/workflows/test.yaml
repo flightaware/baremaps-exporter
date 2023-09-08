@@ -5,6 +5,8 @@ jobs:
     name: golang-test
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/actions/checkout@v4
       - name: Setup golang
         uses: actions/setup-go@v4
         with:
