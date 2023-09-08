@@ -70,3 +70,7 @@ Typical usage:
 ```
 go run github.com/flightaware/baremaps-exporter -o ./tiles/ -d 'postgres://baremaps:baremaps@localhost:5432/baremaps' tiles.json
 ```
+
+## LICENSE
+
+This work is licensed by [FlightAware](https://flightaware.com) under the [BSD 3-Clause License](./LICENSE.md).
