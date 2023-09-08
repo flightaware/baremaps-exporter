@@ -10,7 +10,7 @@ jobs:
       - name: Setup golang
         uses: actions/setup-go@v4
         with:
-          go_version: ${{ vars.GO_VERSION }}
+          go-version: ${{ vars.GO_VERSION }}
       - name: Install staticcheck
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@2023.1
