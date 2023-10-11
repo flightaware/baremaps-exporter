@@ -1,0 +1,25 @@
+on: [push, workflow_dispatch]
+name: Tests
+jobs:
+  golang-test:
+    name: golang-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup golang
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ vars.GO_VERSION }}
+      - name: Install staticcheck
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@2023.1
+      - name: Test go app
+        run: |
+          go test ./...
+      - name: check go fmt
+        run: |
+          test -z $(gofmt -l .)
+      - name: lint with staticcheck
+        run: |
+          staticcheck -checks all ./...

@@ -1,0 +1,52 @@
+{
+	"tilejson": "2.1.0",
+	"attribution": "for me",
+	"tiles": [
+	  "http://localhost:9000/tiles/{z}/{x}/{y}.mvt"
+	],
+	"minzoom": 0,
+	"maxzoom": 14,
+	"bounds": [
+	  -180,
+	  -85,
+	  180,
+	  85
+	],
+	"center": [
+	  -115.1508,
+	  36.0814,
+	  13
+	],
+	"vector_layers": [
+	  {
+		"id": "ocean",
+		"queries": [
+		  {
+			"minzoom": 0,
+			"maxzoom": 10,
+			"sql": "SELECT id, tags, geom FROM osm_ocean_simplified"
+		  },
+		  {
+			"minzoom": 10,
+			"maxzoom": 20,
+			"sql": "SELECT id, tags, geom FROM osm_ocean"
+		  }
+		]
+	  },
+	  {
+		"id": "labels",
+		"queries": [
+		  {
+			"minzoom": 9,
+			"maxzoom": 20,
+			"sql": "SELECT id, tags, geom FROM big_labels"
+		  },
+		  {
+			"minzoom": 12,
+			"maxzoom": 20,
+			"sql": "SELECT id, tags, geom FROM small_labels"
+		  }
+		]
+	  }
+	]
+  }

@@ -1,0 +1,9 @@
+# Output of the go coverage tool
+coverage.out
+coverage.html
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# ignore custom .env files
+.env
