@@ -1,4 +1,4 @@
-module github.flightaware.com/flightaware/baremaps-exporter
+module github.com/flightaware/baremaps-exporter
 
 go 1.20
 
