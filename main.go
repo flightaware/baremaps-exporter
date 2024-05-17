@@ -249,7 +249,7 @@ func main() {
 	tileJSON.MinZoom = zooms[0]
 	tileJSON.MaxZoom = zooms[len(zooms)-1]
 
-	tiles := listTiles(zooms, tileJSON)
+	tiles := ListTiles(zooms, tileJSON)
 	if args.TilesFile != "" {
 		extraTiles, err := tilesFromFile(args.TilesFile)
 		if err != nil {
@@ -271,7 +271,7 @@ func main() {
 		numWorkers = tileLen
 	}
 	// round robin the tiles so workers are hitting similar geospatial entries and zoom at the same time
-	rrTiles := roundRobinTiles(tiles, numWorkers)
+	rrTiles := RoundRobinTiles(tiles, numWorkers)
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		workerTiles := rrTiles[i]
