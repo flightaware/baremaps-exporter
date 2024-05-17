@@ -27,7 +27,8 @@ type BoundingBox struct {
 	Bottom float64
 }
 
-func listTiles(zooms []int, tj *TileJSON) []TileCoords {
+// ListTiles returns a list of all the tiles within the given zooms based on the TileJSON
+func ListTiles(zooms []int, tj *TileJSON) []TileCoords {
 	tiles := make([]TileCoords, 0, 2<<zooms[len(zooms)-1])
 	for _, z := range zooms {
 		newTiles := tilesInBbox(BoundingBox{
@@ -90,8 +91,8 @@ func tilesInBbox(bbox BoundingBox, zoom int) []TileCoords {
 	return tiles
 }
 
-// roundRobinTiles assigns tiles to workers in round robin fashion
-func roundRobinTiles(input []TileCoords, numWorkers int) [][]TileCoords {
+// RoundRobinTiles assigns tiles to workers in round robin fashion
+func RoundRobinTiles(input []TileCoords, numWorkers int) [][]TileCoords {
 	out := make([][]TileCoords, numWorkers)
 	for i, v := range input {
 		index := i % numWorkers
