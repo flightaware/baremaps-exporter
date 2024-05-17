@@ -173,7 +173,7 @@ func NewWriters(args Args, tj *TileJSON) (writer TileWriter, bulkWriter TileBulk
 		meta := CreateMetadata(tj, CreateMetadataOptions{
 			Filename: args.TileJSON,
 			Version:  args.Version,
-			Format: Pbf,
+			Format:   Pbf,
 		})
 		err = mbWriter.BulkWriteMetadata(meta)
 		return

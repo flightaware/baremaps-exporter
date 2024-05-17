@@ -74,7 +74,7 @@ func CreateMetadata(tj *TileJSON, opts CreateMetadataOptions) MbTilesMetadata {
 		}
 		meta["center"] = center
 	}
-	
+
 	// mbtiles spec requires the json field for vector format and it's not meaningful for rasters
 	if opts.Format == Pbf {
 		metaJSONField := CreateMetadataJSON(tj)
