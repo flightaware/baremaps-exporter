@@ -14,10 +14,10 @@ type MbTilesMetadata map[string]string
 type MbTilesFormat string
 
 const (
-	Pbf  MbTilesFormat = "pbf"
-	Jpg  MbTilesFormat = "jpg"
-	Png  MbTilesFormat = "png"
-	WebP MbTilesFormat = "webp"
+	MbTilesFormatPbf  MbTilesFormat = "pbf"
+	MbTilesFormatJpg  MbTilesFormat = "jpg"
+	MbTilesFormatPng  MbTilesFormat = "png"
+	MbTilesFormatWebP MbTilesFormat = "webp"
 )
 
 type CreateMetadataOptions struct {
@@ -32,7 +32,7 @@ type CreateMetadataOptions struct {
 func CreateMetadata(tj *TileJSON, opts CreateMetadataOptions) MbTilesMetadata {
 	format := opts.Format
 	if string(format) == "" {
-		format = Pbf
+		format = MbTilesFormatPbf
 	}
 	meta := MbTilesMetadata{
 		"name":   tj.Name,
@@ -76,7 +76,7 @@ func CreateMetadata(tj *TileJSON, opts CreateMetadataOptions) MbTilesMetadata {
 	}
 
 	// mbtiles spec requires the json field for vector format and it's not meaningful for rasters
-	if opts.Format == Pbf {
+	if opts.Format == MbTilesFormatPbf {
 		metaJSONField := CreateMetadataJSON(tj)
 		if metaJSONBytes, err := json.Marshal(metaJSONField); err == nil {
 			meta["json"] = string(metaJSONBytes)
