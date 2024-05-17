@@ -32,7 +32,7 @@ Go must be installed, version 1.20 or later.
 Then:
 
 ```
-go install github.com/flightaware/baremaps-exporter
+go install github.com/flightaware/baremaps-exporter/cmd/baremaps-exporter
 ```
 
 Now you're ready to go.
@@ -41,7 +41,7 @@ Now you're ready to go.
 
 Run the application with:
 ```
-go run github.com/flightaware/baremaps-exporter --help
+go run github.com/flightaware/baremaps-exporter/cmd/baremaps-exporter --help
 ```
 
 All of the options:
@@ -68,7 +68,7 @@ Options:
 
 Typical usage:
 ```
-go run github.com/flightaware/baremaps-exporter -o ./tiles/ -d 'postgres://baremaps:baremaps@localhost:5432/baremaps' tiles.json
+go run github.com/flightaware/baremaps-exporter/cmd/baremaps-exporter -o ./tiles/ -d 'postgres://baremaps:baremaps@localhost:5432/baremaps' tiles.json
 ```
 
 ## LICENSE

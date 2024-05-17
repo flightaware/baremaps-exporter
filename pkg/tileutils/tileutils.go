@@ -1,4 +1,5 @@
-package main
+// Package tileutils provides types and functions for working with slippy map tiles, MBTiles, and TileJSON
+package tileutils
 
 import (
 	"fmt"
@@ -17,6 +18,12 @@ func latToY(lat float64, zoom int) int {
 	latRad := lat * math.Pi / 180
 	n := math.Pow(2, float64(zoom))
 	return int(math.Floor((1 - math.Log(math.Tan(latRad)+1/math.Cos(latRad))/math.Pi) / 2 * n))
+}
+
+type TileCoords struct {
+	Z int
+	X int
+	Y int
 }
 
 // BoundingBox is a lat/lon set of coordinates for a bounding box
@@ -101,8 +108,8 @@ func RoundRobinTiles(input []TileCoords, numWorkers int) [][]TileCoords {
 	return out
 }
 
-// tilesFromFile reads the tile coordinates to generate from a file
-func tilesFromFile(filename string) ([]TileCoords, error) {
+// TilesFromFile reads the tile coordinates to generate from a file
+func TilesFromFile(filename string) ([]TileCoords, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read file (%s): %w", filename, err)

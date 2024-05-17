@@ -1,4 +1,4 @@
-package main
+package tileutils
 
 import (
 	"bytes"
@@ -12,7 +12,7 @@ import (
 
 func TestGzip(t *testing.T) {
 	data := []byte{1, 2, 3, 4, 5}
-	output, err := gzip(data)
+	output, err := Gzip(data)
 	assert.Nil(t, err)
 
 	// decode the gzip and make sure it is the same as the original input
