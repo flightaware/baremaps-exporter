@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/flightaware/baremaps-exporter"
+
 	"github.com/alexflint/go-arg"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/twpayne/go-mbtiles"
@@ -40,22 +42,48 @@ func (Args) Description() string {
 	return "export baremaps-compatible tilesets from a postgis server"
 }
 
-type TileCoords struct {
-	Z int
-	X int
-	Y int
+type WorkerParams struct {
+	Num             int                      // worker number
+	Wg              *sync.WaitGroup          // waitgroup to signal when completed
+	Args            Args                     // input args
+	TileList        []tileutils.TileCoords   // coords that this worker should process
+	QueryMap        tileutils.ZoomLayerInfo  // a map of the queries relevant at each zoom level
+	GzipCompression bool                     // true if gzip compression should be used
+	Writer          tileutils.TileWriter     // writer to use for output
+	BulkWriter      tileutils.TileBulkWriter // bulk writer if available
+	Pool            *pgxpool.Pool            // postgres connection pool
 }
 
-type WorkerParams struct {
-	Num             int             // worker number
-	Wg              *sync.WaitGroup // waitgroup to signal when completed
-	Args            Args            // input args
-	TileList        []TileCoords    // coords that this worker should process
-	QueryMap        ZoomLayerInfo   // a map of the queries relevant at each zoom level
-	GzipCompression bool            // true if gzip compression should be used
-	Writer          TileWriter      // writer to use for output
-	BulkWriter      TileBulkWriter  // bulk writer if available
-	Pool            *pgxpool.Pool   // postgres connection pool
+// newWriters creates a TileWriter and TileBulkWriter based on the input arguments
+func newWriters(args Args, tj *tileutils.TileJSON) (writer tileutils.TileWriter, bulkWriter tileutils.TileBulkWriter, close func(), err error) {
+	var mbWriter *tileutils.MbTilesWriter
+	if args.Output == "" {
+		writer = &tileutils.DummyWriter{}
+		return
+	}
+	if args.MbTiles {
+		mbWriter = &tileutils.MbTilesWriter{
+			Filename: args.Output,
+		}
+		writer = mbWriter
+		bulkWriter = mbWriter
+		writer, close, err = mbWriter.New()
+		if err != nil {
+			return
+		}
+		meta := tileutils.CreateMetadata(tj, tileutils.CreateMetadataOptions{
+			Filename: args.TileJSON,
+			Version:  args.Version,
+			Format:   tileutils.MbTilesFormatPbf,
+		})
+		err = mbWriter.BulkWriteMetadata(meta)
+		return
+	}
+	writer = &tileutils.FileWriter{
+		Path: args.Output,
+	}
+	writer, close, err = writer.New()
+	return
 }
 
 func connectWithRetries(pool *pgxpool.Pool, numRetries int) (*pgxpool.Conn, error) {
@@ -147,7 +175,7 @@ func tileWorker(params WorkerParams) {
 			continue
 		}
 		if params.GzipCompression {
-			compressed, err := gzip(mvtTile)
+			compressed, err := tileutils.Gzip(mvtTile)
 			if err != nil {
 				fmt.Printf("error compressing tile: %v\n", err)
 			}
@@ -212,7 +240,7 @@ func main() {
 	}
 
 	// read tilejson
-	tileJSON, tileMap, err := ParseTileJSON(args.TileJSON)
+	tileJSON, tileMap, err := tileutils.ParseTileJSON(args.TileJSON)
 	if err != nil {
 		panic(err)
 	}
@@ -249,9 +277,9 @@ func main() {
 	tileJSON.MinZoom = zooms[0]
 	tileJSON.MaxZoom = zooms[len(zooms)-1]
 
-	tiles := ListTiles(zooms, tileJSON)
+	tiles := tileutils.ListTiles(zooms, tileJSON)
 	if args.TilesFile != "" {
-		extraTiles, err := tilesFromFile(args.TilesFile)
+		extraTiles, err := tileutils.TilesFromFile(args.TilesFile)
 		if err != nil {
 			panic(err)
 		}
@@ -261,7 +289,7 @@ func main() {
 	tileLen := len(tiles)
 	fmt.Printf("number of tiles: %d\n", tileLen)
 
-	writer, bulkWriter, close, err := NewWriters(args, tileJSON)
+	writer, bulkWriter, close, err := newWriters(args, tileJSON)
 	if err != nil {
 		panic(err)
 	}
@@ -271,7 +299,7 @@ func main() {
 		numWorkers = tileLen
 	}
 	// round robin the tiles so workers are hitting similar geospatial entries and zoom at the same time
-	rrTiles := RoundRobinTiles(tiles, numWorkers)
+	rrTiles := tileutils.RoundRobinTiles(tiles, numWorkers)
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		workerTiles := rrTiles[i]

@@ -1,4 +1,4 @@
-package main
+package tileutils
 
 import (
 	"bytes"
@@ -6,8 +6,8 @@ import (
 	gziplib "github.com/klauspost/compress/gzip"
 )
 
-// gzip is a utility function to zip up a tile for storage
-func gzip(data []byte) ([]byte, error) {
+// Gzip is a utility function to zip up a tile for storage
+func Gzip(data []byte) ([]byte, error) {
 	var buf bytes.Buffer
 	g, err := gziplib.NewWriterLevel(&buf, gziplib.BestCompression)
 	if err != nil {

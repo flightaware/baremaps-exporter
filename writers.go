@@ -1,4 +1,4 @@
-package main
+package tileutils
 
 import (
 	"fmt"
@@ -151,36 +151,4 @@ func (w *MbTilesWriter) New() (TileWriter, func(), error) {
 			w.Writer.Close()
 		},
 		nil
-}
-
-// NewWriters creates a TileWriter and TileBulkWriter based on the input arguments
-func NewWriters(args Args, tj *TileJSON) (writer TileWriter, bulkWriter TileBulkWriter, close func(), err error) {
-	var mbWriter *MbTilesWriter
-	if args.Output == "" {
-		writer = &DummyWriter{}
-		return
-	}
-	if args.MbTiles {
-		mbWriter = &MbTilesWriter{
-			Filename: args.Output,
-		}
-		writer = mbWriter
-		bulkWriter = mbWriter
-		writer, close, err = mbWriter.New()
-		if err != nil {
-			return
-		}
-		meta := CreateMetadata(tj, CreateMetadataOptions{
-			Filename: args.TileJSON,
-			Version:  args.Version,
-			Format:   MbTilesFormatPbf,
-		})
-		err = mbWriter.BulkWriteMetadata(meta)
-		return
-	}
-	writer = &FileWriter{
-		Path: args.Output,
-	}
-	writer, close, err = writer.New()
-	return
 }
