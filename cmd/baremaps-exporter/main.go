@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flightaware/baremaps-exporter/pkg/tileutils"
+	"github.com/flightaware/baremaps-exporter/v2/pkg/tileutils"
 
 	"github.com/alexflint/go-arg"
 	"github.com/jackc/pgx/v5/pgxpool"
