@@ -11,9 +11,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          check-latest: true
       - name: Install staticcheck
         run: |
-          go install honnef.co/go/tools/cmd/staticcheck@2024.1
+          go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
       - name: Test go app
         run: |
           go test ./...
