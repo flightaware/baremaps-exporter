@@ -86,19 +86,19 @@ func CreateMetadata(tj *TileJSON, opts CreateMetadataOptions) MbTilesMetadata {
 	return meta
 }
 
-// CreateMetadataJSON generates a mbtiles MetadataJson object based on the TileJSON input
-func CreateMetadataJSON(tj *TileJSON) *mbtiles.MetadataJson {
-	meta := mbtiles.MetadataJson{
+// CreateMetadataJSON generates a mbtiles MetadataJSON object based on the TileJSON input
+func CreateMetadataJSON(tj *TileJSON) *mbtiles.MetadataJSON {
+	meta := mbtiles.MetadataJSON{
 		VectorLayers: extractLayersFromTileJSON(tj),
 	}
 	return &meta
 }
 
-func extractLayersFromTileJSON(tj *TileJSON) []mbtiles.MetadataJsonVectorLayer {
-	layers := make([]mbtiles.MetadataJsonVectorLayer, 0, len(tj.VectorLayers))
+func extractLayersFromTileJSON(tj *TileJSON) []mbtiles.MetadataJSONVectorLayer {
+	layers := make([]mbtiles.MetadataJSONVectorLayer, 0, len(tj.VectorLayers))
 	for _, layer := range tj.VectorLayers {
 		l := layer // create local variable copy
-		layer := mbtiles.MetadataJsonVectorLayer{
+		layer := mbtiles.MetadataJSONVectorLayer{
 			ID:     &l.ID,
 			Fields: map[string]string{},
 		}

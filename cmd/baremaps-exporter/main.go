@@ -99,7 +99,7 @@ func connectWithRetries(pool *pgxpool.Pool, numRetries int) (*pgxpool.Conn, erro
 	return nil, lastErr
 }
 
-func progressReporter(total int, numWorkers int) {
+func progressReporter(total int) {
 	ticker := time.NewTicker(progressUpdateRate)
 	start := time.Now()
 	for {
@@ -316,7 +316,7 @@ func main() {
 		}
 		go tileWorker(params)
 	}
-	go progressReporter(tileLen, numWorkers)
+	go progressReporter(tileLen)
 
 	wg.Wait()
 	close()

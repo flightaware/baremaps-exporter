@@ -121,7 +121,7 @@ func (w *MbTilesWriter) New() (TileWriter, func(), error) {
 		return nil, nil, err
 	}
 	// create a mbtiles writer, which is a wrapper around sqlite3
-	_writer, err := mbtiles.NewWriter(w.Filename)
+	_writer, err := mbtiles.NewWriter("sqlite", w.Filename)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating writer: %w", err)
 	}
