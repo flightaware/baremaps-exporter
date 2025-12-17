@@ -2,6 +2,7 @@ package tileutils
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -39,7 +40,7 @@ func ParseTileJSON(filename string) (*TileJSON, ZoomLayerInfo, error) {
 	// read the file
 	jsonBytes, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("error %w reading file %s", err, filename)
 	}
 	// parse the tilejson content
 	tj := TileJSON{
@@ -48,7 +49,7 @@ func ParseTileJSON(filename string) (*TileJSON, ZoomLayerInfo, error) {
 	}
 	err = json.Unmarshal(jsonBytes, &tj)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("%w error in json document:\n%s", err, string(jsonBytes))
 	}
 	// iterate through vector layers to extract the relevant SQL at each layer
 	zooms := ZoomLayerInfo{}
