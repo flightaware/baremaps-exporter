@@ -1,6 +1,7 @@
 package exporter
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -28,6 +29,7 @@ type WorkerParams struct {
 	GzipBufferPool    *tileutils.BytesBufferPool
 	TileCache         []mbtiles.TileData
 	TileCachePosition uint
+	TileBufferCache   []*bytes.Buffer
 	Count             uint
 }
 
@@ -46,13 +48,14 @@ func (p *WorkerParams) Do() {
 
 	// Create worker-local gzip compressor for memory optimization
 	if p.GzipCompression {
-		p.GzipBufferPool = tileutils.NewBytesBufferPool(5, 2*1024*1024)                           // 5 buffers, max 2MB each
-		p.GzipCompressor = tileutils.NewWorkerGzipCompressor(p.GzipBufferPool, gziplib.BestSpeed) // Use BestSpeed for better performance
+		p.GzipBufferPool = tileutils.NewBytesBufferPool(MbTilesBatchSize, 2*1024*1024) // match buffers to batch size, max 2MB each
+		p.GzipCompressor = tileutils.NewWorkerGzipCompressor(gziplib.BestSpeed)        // Use BestSpeed for better performance
 	}
 
 	fmt.Printf("[%d] connected, compression=%t\n", p.Num, p.GzipCompression)
 
 	p.TileCache = make([]mbtiles.TileData, MbTilesBatchSize)
+	p.TileBufferCache = make([]*bytes.Buffer, MbTilesBatchSize)
 
 	// Process all tiles in this worker's list
 	for _, coord := range p.TileList {
@@ -71,11 +74,19 @@ func (p *WorkerParams) Do() {
 		if err != nil {
 			fmt.Printf("error writing remaining tiles: %v\n", err)
 		}
+		// release remaining buffers
+		for i, buf := range p.TileBufferCache {
+			if buf != nil {
+				p.GzipBufferPool.Put(buf)
+				p.TileBufferCache[i] = nil
+			}
+		}
+		p.TileCachePosition = 0
 	}
 
 	// Log buffer pool efficiency for this worker
 	if p.GzipCompressor != nil {
-		stats := p.GzipCompressor.BufferPool.Stats()
+		stats := p.GzipBufferPool.Stats()
 		fmt.Printf("[%d] Buffer pool stats: Created=%d, Reused=%d, ReuseRatio=%.2f%%\n",
 			p.Num, stats.Created, stats.Reused, stats.ReuseRatio*100)
 	}
@@ -106,11 +117,13 @@ func (p *WorkerParams) FetchTile(coord tileutils.TileCoords) error {
 
 	// Apply gzip compression if needed using optimized compressor
 	if p.GzipCompression && p.GzipCompressor != nil {
-		compressed, err := p.GzipCompressor.Compress(mvtTile)
+		buf := p.GzipBufferPool.Get()
+		p.TileBufferCache[p.TileCachePosition] = buf
+		_, err := p.GzipCompressor.Compress(mvtTile, buf)
 		if err != nil {
 			return fmt.Errorf("error compressing tile: %w\n", err)
 		}
-		mvtTile = compressed
+		mvtTile = buf.Bytes()
 	}
 
 	// Write the tile
@@ -129,6 +142,12 @@ func (p *WorkerParams) FetchTile(coord tileutils.TileCoords) error {
 				return fmt.Errorf("error writing tiles: %w\n", err)
 			}
 			p.TileCachePosition = 0
+			for i, buf := range p.TileBufferCache {
+				if buf != nil {
+					p.GzipBufferPool.Put(buf)
+					p.TileBufferCache[i] = nil
+				}
+			}
 		}
 	} else {
 		err := p.Writer.Write(coord.Z, coord.X, coord.Y, mvtTile)

@@ -36,7 +36,7 @@ func TestTilesInBbox(t *testing.T) {
 			tiles := tilesInBbox(test.bbox, test.zoom)
 			assert.Equal(t, test.numTiles, len(tiles))
 			if test.numTiles != len(tiles) {
-				fmt.Println(tiles)
+				// fmt.Println(tiles)
 			}
 		})
 	}

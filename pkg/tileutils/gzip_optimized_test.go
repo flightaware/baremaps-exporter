@@ -2,7 +2,9 @@ package tileutils
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"sync"
 	"testing"
 
 	gziplib "github.com/klauspost/compress/gzip"
@@ -87,13 +89,14 @@ func TestGzipOptimizedCorrectness(t *testing.T) {
 
 	// Compress with optimized worker-local approach
 	pool := NewBytesBufferPool(5, 2*1024*1024)
-	compressor := NewWorkerGzipCompressor(pool, gziplib.BestCompression)
-	optimizedResult, err := compressor.Compress(testData)
+	compressor := NewWorkerGzipCompressor(gziplib.BestCompression)
+	buf := pool.Get()
+	optimizedResult, err := compressor.Compress(testData, buf)
 	require.NoError(t, err)
 
 	// Both should decompress to the same original data
 	originalDecompressed := decompressGzip(t, originalResult)
-	optimizedDecompressed := decompressGzip(t, optimizedResult)
+	optimizedDecompressed := decompressGzip(t, optimizedResult.Bytes())
 
 	assert.Equal(t, testData, originalDecompressed)
 	assert.Equal(t, testData, optimizedDecompressed)
@@ -105,18 +108,20 @@ func TestGzipOptimizedCorrectness(t *testing.T) {
 
 func TestWorkerGzipCompressor(t *testing.T) {
 	pool := NewBytesBufferPool(3, 1024*1024)
-	compressor := NewWorkerGzipCompressor(pool, gziplib.BestCompression)
+	compressor := NewWorkerGzipCompressor(gziplib.BestCompression)
 
 	testData := []byte("Test data for worker gzip compressor")
 
 	// Compress multiple times to test buffer reuse
 	for i := 0; i < 10; i++ {
-		compressed, err := compressor.Compress(testData)
+		buf := pool.Get()
+		compressed, err := compressor.Compress(testData, buf)
 		require.NoError(t, err)
 
 		// Verify decompression
-		decompressed := decompressGzip(t, compressed)
+		decompressed := decompressGzip(t, compressed.Bytes())
 		assert.Equal(t, testData, decompressed)
+		pool.Put(buf)
 	}
 
 	// Check that buffers were reused
@@ -133,26 +138,35 @@ func TestConcurrentWorkerPools(t *testing.T) {
 
 	for i := 0; i < numWorkers; i++ {
 		pools[i] = NewBytesBufferPool(3, 1024*1024)
-		compressors[i] = NewWorkerGzipCompressor(pools[i], gziplib.BestCompression)
+		compressors[i] = NewWorkerGzipCompressor(gziplib.BestCompression)
 	}
 
 	testData := []byte("Concurrent test data")
 
 	// Run concurrent compressions
 	results := make(chan []byte, numWorkers*10)
+	var wg sync.WaitGroup
 
 	for worker := 0; worker < numWorkers; worker++ {
+		wg.Add(1)
 		go func(w int) {
 			for i := 0; i < 10; i++ {
-				compressed, err := compressors[w].Compress(testData)
+				buf := pools[w].Get()
+				compressed, err := compressors[w].Compress(testData, buf)
 				require.NoError(t, err)
-				results <- compressed
+				compressedBytes := make([]byte, compressed.Len())
+				copy(compressedBytes, compressed.Bytes())
+				results <- compressedBytes
+				pools[w].Put(buf)
 			}
+			wg.Done()
 		}(worker)
 	}
+	wg.Wait()
 
 	// Collect and verify results
 	for i := 0; i < numWorkers*10; i++ {
+		fmt.Println(i)
 		compressed := <-results
 		decompressed := decompressGzip(t, compressed)
 		assert.Equal(t, testData, decompressed)

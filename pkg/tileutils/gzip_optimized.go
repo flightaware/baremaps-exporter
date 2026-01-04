@@ -1,31 +1,28 @@
 package tileutils
 
 import (
+	"bytes"
+
 	gziplib "github.com/klauspost/compress/gzip"
 )
 
 // WorkerGzipCompressor provides optimized gzip compression using a worker-local buffer pool
 type WorkerGzipCompressor struct {
-	BufferPool *BytesBufferPool
-	writer     *gziplib.Writer
-	level      int
+	writer *gziplib.Writer
+	level  int
 }
 
 // NewWorkerGzipCompressor creates a new worker-local gzip compressor
-func NewWorkerGzipCompressor(bufferPool *BytesBufferPool, level int) *WorkerGzipCompressor {
+func NewWorkerGzipCompressor(level int) *WorkerGzipCompressor {
 	return &WorkerGzipCompressor{
-		BufferPool: bufferPool,
-		level:      level,
+		level: level,
 		// writer will be created lazily
 	}
 }
 
-// Compress compresses data using the worker's buffer pool and reused writer
-func (c *WorkerGzipCompressor) Compress(data []byte) ([]byte, error) {
-	// Get a buffer from the pool
-	buf := c.BufferPool.Get()
-	defer c.BufferPool.Put(buf)
-
+// Compress compresses data using the provided buffer and reused writer.
+// Returns a buffer, which will almost certainly be the buffer provided as input.
+func (c *WorkerGzipCompressor) Compress(data []byte, buf *bytes.Buffer) (*bytes.Buffer, error) {
 	// Create or reset gzip writer
 	if c.writer == nil {
 		var err error
@@ -45,9 +42,6 @@ func (c *WorkerGzipCompressor) Compress(data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	// Return a copy of the compressed data
-	// Note: We still need to copy because the buffer will be reused
-	result := make([]byte, buf.Len())
-	copy(result, buf.Bytes())
-	return result, nil
+	// NOTE: The caller has to release the buffer back to the pool if it acquired one!
+	return buf, nil
 }
