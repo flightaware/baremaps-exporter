@@ -6,6 +6,7 @@ require (
 	github.com/alexflint/go-arg v1.6.1
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/klauspost/compress v1.18.2
+	github.com/mattn/go-sqlite3 v1.14.33
 	github.com/paulmach/orb v0.12.0
 	github.com/stretchr/testify v1.11.1
 	github.com/twpayne/go-mbtiles v0.0.2
