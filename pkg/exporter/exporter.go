@@ -208,6 +208,8 @@ func (e *Exporter) ProgressReporter(ctx context.Context, totalTiles int) {
 	defer ticker.Stop()
 
 	start := time.Now()
+	var m runtime.MemStats
+	var lastGCPauseNs uint64
 
 	for {
 		select {
@@ -224,7 +226,22 @@ func (e *Exporter) ProgressReporter(ctx context.Context, totalTiles int) {
 				remaining = totalTime - elapsed
 			}
 
-			fmt.Printf("progress: %.2f%% (%s elapsed, %s remaining)\n", progress, elapsed, remaining)
+			runtime.ReadMemStats(&m)
+			if m.NumGC > 0 {
+				lastGCPauseNs = m.PauseNs[(m.NumGC+255)%256]
+			} else {
+				lastGCPauseNs = 0
+			}
+			fmt.Printf("progress: %.2f%% (%s elapsed, %s remaining) | alloc = %vMiB, total = %vMiB, numgc = %v, gcpause = %.2fs, last = %dms\n",
+				progress,
+				elapsed,
+				remaining,
+				m.Alloc/1024/1024,
+				m.TotalAlloc/1024/1024,
+				m.NumGC,
+				time.Duration(m.PauseTotalNs).Seconds(),
+				int(time.Duration(lastGCPauseNs).Milliseconds()),
+			)
 
 			if current >= totalTiles {
 				return
