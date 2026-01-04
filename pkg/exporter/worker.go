@@ -33,7 +33,7 @@ type WorkerParams struct {
 	Count             uint
 }
 
-// TileWorker processes tiles for a single worker
+// Do processes a slice of tiles for a single worker
 func (p *WorkerParams) Do() {
 	defer p.Wg.Done()
 
@@ -121,7 +121,7 @@ func (p *WorkerParams) FetchTile(coord tileutils.TileCoords) error {
 		p.TileBufferCache[p.TileCachePosition] = buf
 		_, err := p.GzipCompressor.Compress(mvtTile, buf)
 		if err != nil {
-			return fmt.Errorf("error compressing tile: %w\n", err)
+			return fmt.Errorf("error compressing tile: %w", err)
 		}
 		mvtTile = buf.Bytes()
 	}
@@ -139,7 +139,7 @@ func (p *WorkerParams) FetchTile(coord tileutils.TileCoords) error {
 		if p.TileCachePosition == MbTilesBatchSize {
 			err := p.BulkWriter.BulkWrite(p.TileCache)
 			if err != nil {
-				return fmt.Errorf("error writing tiles: %w\n", err)
+				return fmt.Errorf("error writing tiles: %w", err)
 			}
 			p.TileCachePosition = 0
 			for i, buf := range p.TileBufferCache {
@@ -152,7 +152,7 @@ func (p *WorkerParams) FetchTile(coord tileutils.TileCoords) error {
 	} else {
 		err := p.Writer.Write(coord.Z, coord.X, coord.Y, mvtTile)
 		if err != nil {
-			return fmt.Errorf("error writing tile (%d, %d, %d): %w\n", coord.Z, coord.X, coord.Y, err)
+			return fmt.Errorf("error writing tile (%d, %d, %d): %w", coord.Z, coord.X, coord.Y, err)
 		}
 	}
 	return nil

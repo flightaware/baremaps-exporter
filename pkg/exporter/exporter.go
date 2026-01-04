@@ -1,3 +1,4 @@
+// Package exporter provides the base export functionality with support for multiple workers.
 package exporter
 
 import (
