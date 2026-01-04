@@ -105,8 +105,16 @@ func (p *WorkerParams) FetchTile(coord tileutils.TileCoords) error {
 	// Must be used with Query and not QueryRow, since QueryRow closes rows result immediately which makes
 	// accesses to the buffer unstable.
 	var mvtTile pgtype.DriverBytes
-	if err := rows.Scan(&mvtTile); err != nil {
-		return fmt.Errorf("error during tile generation (%d,%d,%d): %w", coord.Z, coord.X, coord.Y, err)
+	if rows.Next() {
+		if err := rows.Scan(&mvtTile); err != nil {
+			return fmt.Errorf("error during tile scan: %w", err)
+		}
+	} else {
+		// Check if the query returned no rows or if an error occurred during Next()
+		if err := rows.Err(); err != nil {
+			return fmt.Errorf("rows error: %w", err)
+		}
+		return fmt.Errorf("no tile data returned for (%d,%d,%d)", coord.Z, coord.X, coord.Y)
 	}
 
 	// Log slow tiles
