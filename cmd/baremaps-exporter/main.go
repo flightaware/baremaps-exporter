@@ -28,11 +28,11 @@ func main() {
 		NumWorkers: runtime.NumCPU(),
 	}
 	arg.MustParse(&args)
-	
+
 	if strings.HasSuffix(args.Output, ".mbtiles") {
 		args.MbTiles = true
 	}
-	
+
 	config := exporter.Config{
 		TileJSON:   args.TileJSON,
 		Output:     args.Output,
@@ -43,13 +43,13 @@ func main() {
 		Zoom:       args.Zoom,
 		TilesFile:  args.TilesFile,
 	}
-	
+
 	exp, err := exporter.NewExporter(config)
 	if err != nil {
 		panic(err)
 	}
 	defer exp.Close()
-	
+
 	err = exp.Export()
 	if err != nil {
 		panic(err)
