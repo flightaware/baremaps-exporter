@@ -11,8 +11,6 @@ import (
 
 	"github.com/flightaware/baremaps-exporter/v2/pkg/tileutils"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/twpayne/go-mbtiles"
-	gziplib "github.com/klauspost/compress/gzip"
 	"golang.org/x/exp/slices"
 )
 
@@ -35,12 +33,12 @@ type Config struct {
 
 // Exporter handles the tile export process
 type Exporter struct {
-	config       Config
-	pool         *pgxpool.Pool
-	tileJSON     *tileutils.TileJSON
-	queryMap     tileutils.ZoomLayerInfo
-	progress     map[int]int
-	progressMux  sync.Mutex
+	config      Config
+	pool        *pgxpool.Pool
+	tileJSON    *tileutils.TileJSON
+	queryMap    tileutils.ZoomLayerInfo
+	progress    map[int]int
+	progressMux sync.Mutex
 }
 
 // NewExporter creates a new exporter instance
@@ -50,22 +48,22 @@ func NewExporter(config Config) (*Exporter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse database config: %w", err)
 	}
-	
+
 	// Read tilejson
 	tileJSON, queryMap, err := tileutils.ParseTileJSON(config.TileJSON)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse TileJSON: %w", err)
 	}
-	
+
 	// Configure connection pool
 	pgConfig.MinConns = int32(runtime.NumCPU())
 	pgConfig.MaxConns = int32(2 * runtime.NumCPU())
-	
+
 	pool, err := pgxpool.NewWithConfig(context.Background(), pgConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create connection pool: %w", err)
 	}
-	
+
 	return &Exporter{
 		config:   config,
 		pool:     pool,
@@ -85,7 +83,7 @@ func (e *Exporter) Close() {
 // GenerateZoomLevels parses the zoom configuration and returns zoom levels
 func (e *Exporter) GenerateZoomLevels() ([]int, error) {
 	var zooms []int
-	
+
 	if e.config.Zoom != "" {
 		// Parse comma-delimited zoom levels
 		strZooms := strings.Split(e.config.Zoom, ",")
@@ -104,22 +102,22 @@ func (e *Exporter) GenerateZoomLevels() ([]int, error) {
 			zooms = append(zooms, z)
 		}
 	}
-	
+
 	slices.Sort(zooms)
-	
+
 	// Update TileJSON min/max zoom to match requested output
 	if len(zooms) > 0 {
 		e.tileJSON.MinZoom = zooms[0]
 		e.tileJSON.MaxZoom = zooms[len(zooms)-1]
 	}
-	
+
 	return zooms, nil
 }
 
 // GenerateTileList creates the list of tiles to process
 func (e *Exporter) GenerateTileList(zooms []int) ([]tileutils.TileCoords, error) {
 	tiles := tileutils.ListTiles(zooms, e.tileJSON)
-	
+
 	// Add extra tiles from file if specified
 	if e.config.TilesFile != "" {
 		extraTiles, err := tileutils.TilesFromFile(e.config.TilesFile)
@@ -129,18 +127,18 @@ func (e *Exporter) GenerateTileList(zooms []int) ([]tileutils.TileCoords, error)
 		fmt.Printf("read tile coordinates from file: %d\n", len(extraTiles))
 		tiles = append(tiles, extraTiles...)
 	}
-	
+
 	return tiles, nil
 }
 
 // CreateWriters creates the appropriate tile writers based on configuration
 func (e *Exporter) CreateWriters() (tileutils.TileWriter, tileutils.TileBulkWriter, func(), error) {
 	var mbWriter *tileutils.MbTilesWriter
-	
+
 	if e.config.Output == "" {
 		return &tileutils.DummyWriter{}, nil, func() {}, nil
 	}
-	
+
 	if e.config.MbTiles {
 		mbWriter = &tileutils.MbTilesWriter{
 			Filename: e.config.Output,
@@ -149,7 +147,7 @@ func (e *Exporter) CreateWriters() (tileutils.TileWriter, tileutils.TileBulkWrit
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		
+
 		meta := tileutils.CreateMetadata(e.tileJSON, tileutils.CreateMetadataOptions{
 			Filename: e.config.TileJSON,
 			Version:  e.config.Version,
@@ -159,10 +157,10 @@ func (e *Exporter) CreateWriters() (tileutils.TileWriter, tileutils.TileBulkWrit
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		
+
 		return writer, mbWriter, close, nil
 	}
-	
+
 	writer := &tileutils.FileWriter{
 		Path: e.config.Output,
 	}
@@ -195,7 +193,7 @@ func (e *Exporter) UpdateProgress(workerNum, count int) {
 func (e *Exporter) GetTotalProgress() int {
 	e.progressMux.Lock()
 	defer e.progressMux.Unlock()
-	
+
 	total := 0
 	for _, count := range e.progress {
 		total += count
@@ -207,9 +205,9 @@ func (e *Exporter) GetTotalProgress() int {
 func (e *Exporter) ProgressReporter(ctx context.Context, totalTiles int) {
 	ticker := time.NewTicker(ProgressUpdateRate)
 	defer ticker.Stop()
-	
+
 	start := time.Now()
-	
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -218,165 +216,19 @@ func (e *Exporter) ProgressReporter(ctx context.Context, totalTiles int) {
 			current := e.GetTotalProgress()
 			progress := float64(current) / float64(totalTiles) * 100.0
 			elapsed := time.Duration(int(t.Sub(start).Seconds())) * time.Second
-			
+
 			var remaining time.Duration
 			if progress > 0 {
 				totalTime := time.Duration(int(elapsed.Seconds()/(progress/100.0))) * time.Second
 				remaining = totalTime - elapsed
 			}
-			
+
 			fmt.Printf("progress: %.2f%% (%s elapsed, %s remaining)\n", progress, elapsed, remaining)
-			
+
 			if current >= totalTiles {
 				return
 			}
 		}
-	}
-}
-
-// WorkerParams holds parameters for a tile worker
-type WorkerParams struct {
-	Num             int
-	Wg              *sync.WaitGroup
-	Exporter        *Exporter
-	TileList        []tileutils.TileCoords
-	GzipCompression bool
-	Writer          tileutils.TileWriter
-	BulkWriter      tileutils.TileBulkWriter
-}
-
-// ProcessTile processes a single tile and returns the MVT data
-func (e *Exporter) ProcessTile(conn *pgxpool.Conn, coord tileutils.TileCoords) ([]byte, error) {
-	queryStr := "SELECT "
-	layerCount := 0
-	
-	for layerName, sqlStmts := range e.queryMap[coord.Z] {
-		if layerCount > 0 {
-			queryStr += "||"
-		}
-		sql := "(WITH mvtgeom AS ("
-		for i, query := range sqlStmts {
-			template := "(SELECT ST_AsMVTGeom(t.geom, ST_TileEnvelope(%d, %d, %d)) AS geom, t.tags, t.id " +
-				"FROM (%s) AS t " +
-				"WHERE t.geom && ST_TileEnvelope(%d, %d, %d, margin => (64.0/4096)))"
-			_sql := fmt.Sprintf(template,
-				coord.Z, coord.X, coord.Y,
-				strings.ReplaceAll(query, ";", ""),
-				coord.Z, coord.X, coord.Y)
-			if i != 0 {
-				sql += " UNION "
-			}
-			sql += _sql
-		}
-		queryStr += sql + fmt.Sprintf(") SELECT ST_AsMVT(mvtgeom.*, '%s') FROM mvtgeom )", layerName)
-		layerCount++
-	}
-	queryStr += " mvtTile;"
-	
-	row := conn.QueryRow(context.Background(), queryStr)
-	var mvtTile []byte
-	err := row.Scan(&mvtTile)
-	if err != nil {
-		return nil, fmt.Errorf("error during tile generation (%d,%d,%d): %w", coord.Z, coord.X, coord.Y, err)
-	}
-	
-	return mvtTile, nil
-}
-
-// TileWorker processes tiles for a single worker
-func TileWorker(params WorkerParams) {
-	defer params.Wg.Done()
-	
-	// Open database connection
-	conn, err := params.Exporter.ConnectWithRetries(5)
-	if err != nil {
-		fmt.Printf("could not acquire connection! %v\n", err)
-		return
-	}
-	defer conn.Release()
-	
-	// Create worker-local gzip compressor for memory optimization
-	var gzipCompressor *tileutils.WorkerGzipCompressor
-	if params.GzipCompression {
-		bufferPool := tileutils.NewWorkerBufferPool(5, 2*1024*1024) // 5 buffers, max 2MB each
-		gzipCompressor = tileutils.NewWorkerGzipCompressor(bufferPool, gziplib.BestSpeed) // Use BestSpeed for better performance
-	}
-	
-	fmt.Printf("[%d] connected, compression=%t\n", params.Num, params.GzipCompression)
-	
-	tileCache := make([]mbtiles.TileData, MbTilesBatchSize)
-	tileCachePos := 0
-	count := 0
-	
-	// Process all tiles in this worker's list
-	for _, coord := range params.TileList {
-		start := time.Now()
-		count++
-		params.Exporter.UpdateProgress(params.Num, count)
-		
-		// Process the tile
-		mvtTile, err := params.Exporter.ProcessTile(conn, coord)
-		if err != nil {
-			fmt.Printf("error processing tile: %v\n", err)
-			continue
-		}
-		
-		// Apply gzip compression if needed using optimized compressor
-		if params.GzipCompression && gzipCompressor != nil {
-			compressed, err := gzipCompressor.Compress(mvtTile)
-			if err != nil {
-				fmt.Printf("error compressing tile: %v\n", err)
-				continue
-			}
-			mvtTile = compressed
-		}
-		
-		// Log slow tiles
-		end := time.Now()
-		if end.Sub(start) > time.Duration(5)*time.Second {
-			fmt.Printf("[%d] slow tile: %d/%d/%d - %s\n", params.Num, coord.Z, coord.X, coord.Y, end.Sub(start))
-		}
-		
-		// Write the tile
-		if params.BulkWriter != nil {
-			tileCache[tileCachePos] = mbtiles.TileData{
-				Z:    coord.Z,
-				X:    coord.X,
-				Y:    coord.Y,
-				Data: mvtTile,
-			}
-			tileCachePos++
-			
-			if tileCachePos == MbTilesBatchSize {
-				err := params.BulkWriter.BulkWrite(tileCache)
-				if err != nil {
-					fmt.Printf("error writing tiles: %v\n", err)
-					continue
-				}
-				tileCachePos = 0
-			}
-		} else {
-			err := params.Writer.Write(coord.Z, coord.X, coord.Y, mvtTile)
-			if err != nil {
-				fmt.Printf("error writing tile (%d, %d, %d): %v\n", coord.Z, coord.X, coord.Y, err)
-				continue
-			}
-		}
-	}
-	
-	// Write remaining tiles in cache
-	if tileCachePos > 0 && params.BulkWriter != nil {
-		err := params.BulkWriter.BulkWrite(tileCache[:tileCachePos])
-		if err != nil {
-			fmt.Printf("error writing remaining tiles: %v\n", err)
-		}
-	}
-	
-	// Log buffer pool efficiency for this worker
-	if gzipCompressor != nil {
-		stats := gzipCompressor.BufferPool.Stats()
-		fmt.Printf("[%d] Buffer pool stats: Created=%d, Reused=%d, ReuseRatio=%.2f%%\n", 
-			params.Num, stats.Created, stats.Reused, stats.ReuseRatio*100)
 	}
 }
 
@@ -387,42 +239,42 @@ func (e *Exporter) Export() error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Generate tile list
 	tiles, err := e.GenerateTileList(zooms)
 	if err != nil {
 		return err
 	}
-	
+
 	tileLen := len(tiles)
 	fmt.Printf("number of tiles: %d\n", tileLen)
-	
+
 	// Create writers
 	writer, bulkWriter, closeFunc, err := e.CreateWriters()
 	if err != nil {
 		return err
 	}
 	defer closeFunc()
-	
+
 	// Determine number of workers
 	numWorkers := e.config.NumWorkers
 	if numWorkers > tileLen {
 		numWorkers = tileLen
 	}
-	
+
 	// Distribute tiles to workers
 	rrTiles := tileutils.RoundRobinTiles(tiles, numWorkers)
-	
+
 	// Start progress reporter
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go e.ProgressReporter(ctx, tileLen)
-	
+
 	// Start workers
 	var wg sync.WaitGroup
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
-		params := WorkerParams{
+		worker := WorkerParams{
 			Num:             i,
 			Wg:              &wg,
 			Exporter:        e,
@@ -431,12 +283,12 @@ func (e *Exporter) Export() error {
 			BulkWriter:      bulkWriter,
 			GzipCompression: e.config.MbTiles,
 		}
-		go TileWorker(params)
+		go worker.Do()
 	}
-	
+
 	// Wait for completion
 	wg.Wait()
 	cancel() // Stop progress reporter
-	
+
 	return nil
 }
