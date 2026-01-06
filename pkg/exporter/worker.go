@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -94,9 +93,9 @@ func (p *WorkerParams) Do() {
 
 func (p *WorkerParams) FetchTile(coord tileutils.TileCoords) error {
 	// Query tile from the database
-	queryStr := p.queryString(coord)
+	queryStr := p.Exporter.sqlQueryByZoom[coord.Z]
 	start := time.Now()
-	rows, err := p.Conn.Query(context.Background(), queryStr)
+	rows, err := p.Conn.Query(context.Background(), queryStr, coord.Z, coord.X, coord.Y)
 	if err != nil {
 		return fmt.Errorf("error querying postgres for tile (%d,%d,%d): %w", coord.Z, coord.X, coord.Y, err)
 	}
@@ -164,33 +163,4 @@ func (p *WorkerParams) FetchTile(coord tileutils.TileCoords) error {
 		}
 	}
 	return nil
-}
-
-func (p *WorkerParams) queryString(coord tileutils.TileCoords) string {
-	queryStr := "SELECT "
-	layerCount := 0
-
-	for layerName, sqlStmts := range p.Exporter.queryMap[coord.Z] {
-		if layerCount > 0 {
-			queryStr += "||"
-		}
-		sql := "(WITH mvtgeom AS ("
-		for i, query := range sqlStmts {
-			template := "(SELECT ST_AsMVTGeom(t.geom, ST_TileEnvelope(%d, %d, %d)) AS geom, t.tags, t.id " +
-				"FROM (%s) AS t " +
-				"WHERE t.geom && ST_TileEnvelope(%d, %d, %d, margin => (64.0/4096)))"
-			_sql := fmt.Sprintf(template,
-				coord.Z, coord.X, coord.Y,
-				strings.ReplaceAll(query, ";", ""),
-				coord.Z, coord.X, coord.Y)
-			if i != 0 {
-				sql += " UNION "
-			}
-			sql += _sql
-		}
-		queryStr += sql + fmt.Sprintf(") SELECT ST_AsMVT(mvtgeom.*, '%s') FROM mvtgeom )", layerName)
-		layerCount++
-	}
-	queryStr += " mvtTile;"
-	return queryStr
 }

@@ -2,6 +2,7 @@
 package exporter
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"runtime"
@@ -34,12 +35,13 @@ type Config struct {
 
 // Exporter handles the tile export process
 type Exporter struct {
-	config      Config
-	pool        *pgxpool.Pool
-	tileJSON    *tileutils.TileJSON
-	queryMap    tileutils.ZoomLayerInfo
-	progress    map[int]int
-	progressMux sync.Mutex
+	config         Config
+	pool           *pgxpool.Pool
+	tileJSON       *tileutils.TileJSON
+	queryMap       tileutils.ZoomLayerInfo
+	progress       map[int]int
+	progressMux    sync.Mutex
+	sqlQueryByZoom map[int]string
 }
 
 // NewExporter creates a new exporter instance
@@ -65,13 +67,53 @@ func NewExporter(config Config) (*Exporter, error) {
 		return nil, fmt.Errorf("failed to create connection pool: %w", err)
 	}
 
-	return &Exporter{
+	exporter := &Exporter{
 		config:   config,
 		pool:     pool,
 		tileJSON: tileJSON,
 		queryMap: queryMap,
 		progress: make(map[int]int),
-	}, nil
+	}
+	exporter.initQueryStrings()
+	return exporter, nil
+}
+
+func (e *Exporter) initQueryStrings() {
+	e.sqlQueryByZoom = make(map[int]string, len(e.queryMap))
+	buf := bytes.NewBuffer(make([]byte, 0, 2048))
+	for zoom, qm := range e.queryMap {
+		e.sqlQueryByZoom[zoom] = e.generateQueryString(buf, qm)
+	}
+}
+
+func (e *Exporter) generateQueryString(buf *bytes.Buffer, queryMap map[string][]string) string {
+	buf.Reset()
+	buf.WriteString("SELECT ")
+	layerCount := 0
+
+	for layerName, sqlStmts := range queryMap {
+		if layerCount > 0 {
+			buf.WriteString("||")
+		}
+		buf.WriteString("(WITH mvtgeom AS (")
+		for i, query := range sqlStmts {
+			if i != 0 {
+				buf.WriteString(" UNION ")
+			}
+			// Use $1, $2, $3 instead of hardcoding coord.Z, X, Y
+			buf.WriteString("(SELECT ST_AsMVTGeom(t.geom, ST_TileEnvelope($1, $2, $3)) AS geom, t.tags, t.id ")
+			buf.WriteString("FROM (")
+			buf.WriteString(strings.ReplaceAll(query, ";", ""))
+			buf.WriteString(") AS t ")
+			buf.WriteString("WHERE t.geom && ST_TileEnvelope($1, $2, $3, margin => (64.0/4096)))")
+		}
+		buf.WriteString(") SELECT ST_AsMVT(mvtgeom.*, '")
+		buf.WriteString(layerName)
+		buf.WriteString("') FROM mvtgeom )")
+		layerCount++
+	}
+	buf.WriteString(" mvtTile;")
+	return buf.String()
 }
 
 // Close closes the database connection pool
