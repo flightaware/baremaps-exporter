@@ -256,6 +256,13 @@ func (e *Exporter) ProgressReporter(ctx context.Context, totalTiles int) {
 	for {
 		select {
 		case <-ctx.Done():
+			current := e.GetTotalProgress()
+			progress := float64(current) / float64(totalTiles) * 100.0
+			elapsed := time.Duration(int(time.Since(start).Seconds())) * time.Second
+			fmt.Printf("done: %.2f%% (%s elapsed)\n",
+				progress,
+				elapsed,
+			)
 			return
 		case t := <-ticker.C:
 			current := e.GetTotalProgress()
@@ -286,6 +293,13 @@ func (e *Exporter) ProgressReporter(ctx context.Context, totalTiles int) {
 			)
 
 			if current >= totalTiles {
+				current := e.GetTotalProgress()
+				progress := float64(current) / float64(totalTiles) * 100.0
+				elapsed := time.Duration(int(time.Since(start).Seconds())) * time.Second
+				fmt.Printf("done: %.2f%% (%s elapsed)\n",
+					progress,
+					elapsed,
+				)
 				return
 			}
 		}
