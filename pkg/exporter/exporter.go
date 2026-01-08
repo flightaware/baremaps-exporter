@@ -18,19 +18,19 @@ import (
 
 const (
 	ProgressUpdateRate = time.Duration(15) * time.Second
-	MbTilesBatchSize   = 10
 )
 
 // Config holds the configuration for the exporter
 type Config struct {
-	TileJSON   string
-	Output     string
-	MbTiles    bool
-	Dsn        string
-	NumWorkers int
-	Version    string
-	Zoom       string
-	TilesFile  string
+	TileJSON         string
+	Output           string
+	MbTiles          bool
+	Dsn              string
+	NumWorkers       int
+	Version          string
+	Zoom             string
+	TilesFile        string
+	MbTilesBatchSize uint // how many tiles to fetch in a batch and then write altogether to mbtiles
 }
 
 // Exporter handles the tile export process

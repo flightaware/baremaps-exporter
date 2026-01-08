@@ -47,14 +47,14 @@ func (p *WorkerParams) Do() {
 
 	// Create worker-local gzip compressor for memory optimization
 	if p.GzipCompression {
-		p.GzipBufferPool = tileutils.NewBytesBufferPool(MbTilesBatchSize, 2*1024*1024) // match buffers to batch size, max 2MB each
-		p.GzipCompressor = tileutils.NewWorkerGzipCompressor(gziplib.BestSpeed)        // Use BestSpeed for better performance
+		p.GzipBufferPool = tileutils.NewBytesBufferPool(int(p.Exporter.config.MbTilesBatchSize), 2*1024*1024) // match buffers to batch size, max 2MB each
+		p.GzipCompressor = tileutils.NewWorkerGzipCompressor(gziplib.BestSpeed)                               // Use BestSpeed for better performance
 	}
 
 	fmt.Printf("[%d] connected, compression=%t\n", p.Num, p.GzipCompression)
 
-	p.TileCache = make([]mbtiles.TileData, MbTilesBatchSize)
-	p.TileBufferCache = make([]*bytes.Buffer, MbTilesBatchSize)
+	p.TileCache = make([]mbtiles.TileData, (int(p.Exporter.config.MbTilesBatchSize)))
+	p.TileBufferCache = make([]*bytes.Buffer, (int(p.Exporter.config.MbTilesBatchSize)))
 
 	// Process all tiles in this worker's list
 	for _, coord := range p.TileList {
@@ -143,7 +143,7 @@ func (p *WorkerParams) FetchTile(coord tileutils.TileCoords) error {
 		}
 		p.TileCachePosition++
 
-		if p.TileCachePosition == MbTilesBatchSize {
+		if p.TileCachePosition == p.Exporter.config.MbTilesBatchSize {
 			err := p.BulkWriter.BulkWrite(p.TileCache)
 			if err != nil {
 				return fmt.Errorf("error writing tiles: %w", err)
