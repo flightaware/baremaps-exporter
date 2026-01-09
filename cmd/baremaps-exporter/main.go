@@ -6,6 +6,7 @@ import (
 
 	"github.com/alexflint/go-arg"
 	"github.com/flightaware/baremaps-exporter/v2/pkg/exporter"
+	"github.com/pkg/profile"
 )
 
 type Args struct {
@@ -25,6 +26,7 @@ func (Args) Description() string {
 }
 
 func main() {
+	defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
 	args := Args{
 		NumWorkers: runtime.NumCPU(),
 		BatchSize:  10,
