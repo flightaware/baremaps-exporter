@@ -57,9 +57,9 @@ func (p *WorkerParams) Do() {
 	p.TileCache = make([]mbtiles.TileData, (int(p.Exporter.config.MbTilesBatchSize)))
 	p.TileBufferCache = make([]*bytes.Buffer, (int(p.Exporter.config.MbTilesBatchSize)))
 
-	// Set JIT and bitmapscan OFF to optimize for performance
-	if _, err := p.Conn.Exec(context.Background(), "SET jit = off; SET enable_bitmapscan = off;"); err != nil {
-		log.Fatalf("error configuring postgres to not use JIT: %v", err)
+	// Disable JIT, it doesn't help us with highly prepared statements
+	if _, err := p.Conn.Exec(context.Background(), "SET jit = off;"); err != nil {
+		log.Fatalf("error configuring postgres to disable JIT: %v", err)
 	}
 
 	// Process all tiles in this worker's list
