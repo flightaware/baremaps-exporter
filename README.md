@@ -32,7 +32,7 @@ Go must be installed, version 1.25 or later.
 Then:
 
 ```
-go install github.com/flightaware/baremaps-exporter/cmd/baremaps-exporter/v2
+go install github.com/flightaware/baremaps-exporter/v2/cmd/baremaps-exporter
 ```
 
 Now you're ready to go.
