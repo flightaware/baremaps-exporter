@@ -61,6 +61,11 @@ func (p *WorkerParams) Do() {
 	if _, err := p.Conn.Exec(context.Background(), "SET jit = off;"); err != nil {
 		log.Fatalf("error configuring postgres to disable JIT: %v", err)
 	}
+	if p.Exporter.config.InitSQLCmd != "" {
+		if _, err := p.Conn.Exec(context.Background(), p.Exporter.config.InitSQLCmd); err != nil {
+			log.Fatalf("error running initialization postgres command: %s: %v", p.Exporter.config.InitSQLCmd, err)
+		}
+	}
 
 	// Process all tiles in this worker's list
 	for _, coord := range p.TileList {

@@ -22,15 +22,16 @@ const (
 
 // Config holds the configuration for the exporter
 type Config struct {
-	TileJSON         string
-	Output           string
-	MbTiles          bool
-	Dsn              string
-	NumWorkers       int
-	Version          string
-	Zoom             string
-	TilesFile        string
-	MbTilesBatchSize uint // how many tiles to fetch in a batch and then write altogether to mbtiles
+	TileJSON         string // Input TileJSON filename
+	Output           string // Output filename
+	MbTiles          bool   // True if outputting to a mbtiles file, otherwise outputs to a directory
+	Dsn              string // DSN to connect to postgres to query tiles
+	InitSQLCmd       string // Initialization SQL command to be sent on session start for custom configuration or tuning
+	NumWorkers       int    // Number of workers to process tiles in parallel
+	Version          string // Tileset version written to the mbtiles file metadata
+	Zoom             string // List of zooms to process, separated by a comma
+	TilesFile        string // A list of custom tile coordinates to also generate, in addition to what is specified in zooms
+	MbTilesBatchSize uint   // how many tiles to fetch in a batch and then write altogether to mbtiles
 }
 
 // Exporter handles the tile export process

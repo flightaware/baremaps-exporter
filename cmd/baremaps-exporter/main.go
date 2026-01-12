@@ -13,6 +13,7 @@ type Args struct {
 	Output     string `arg:"-o,--output" help:"output file or directory"`
 	MbTiles    bool   `arg:"--mbtiles" help:"output mbtiles instead of files (automatically selected if output filename ends in '.mbtiles')"`
 	Dsn        string `arg:"-d,--dsn" help:"database connection string (dsn) for postgis"`
+	InitSQLCmd string `arg:"--init" help:"initialization SQL statement that is sent on connection/session start, for any specific optimizations"`
 	NumWorkers int    `arg:"-w,--workers" help:"number of workers to spawn"`
 	BatchSize  uint   `arg:"-b,--batch" help:"size of the batch to query and write at once"`
 	Version    string `arg:"--tileversion" help:"version of the tileset (string) written to mbtiles metadata"`
@@ -41,6 +42,7 @@ func main() {
 		Output:           args.Output,
 		MbTiles:          args.MbTiles,
 		Dsn:              args.Dsn,
+		InitSQLCmd:       args.InitSQLCmd,
 		NumWorkers:       args.NumWorkers,
 		Version:          args.Version,
 		Zoom:             args.Zoom,
