@@ -47,7 +47,7 @@ baremaps-exporter --help
 All of the options:
 ```
 export baremaps-compatible tilesets from a postgis server
-Usage: main [--output OUTPUT] [--mbtiles] [--dsn DSN] [--init INIT] [--workers WORKERS] [--batch BATCH] [--tileversion TILEVERSION] [--zoom ZOOM] [--file FILE] TILEJSON
+Usage: baremaps-exporter [--output OUTPUT] [--mbtiles] [--dsn DSN] [--init INIT] [--workers WORKERS] [--batch BATCH] [--tileversion TILEVERSION] [--zoom ZOOM] [--file FILE] TILEJSON
 
 Positional arguments:
   TILEJSON               input tilejson file
