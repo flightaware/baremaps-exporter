@@ -27,7 +27,7 @@ The exporter will automatically detect if the output location ends in
 
 ## Install
 
-Go must be installed, version 1.20 or later.
+Go must be installed, version 1.25 or later.
 
 Then:
 
@@ -47,7 +47,7 @@ baremaps-exporter --help
 All of the options:
 ```
 export baremaps-compatible tilesets from a postgis server
-Usage: baremaps-exporter [--output OUTPUT] [--mbtiles] [--dsn DSN] [--workers WORKERS] [--tileversion TILEVERSION] [--zoom ZOOM] [--file FILE] TILEJSON
+Usage: main [--output OUTPUT] [--mbtiles] [--dsn DSN] [--init INIT] [--workers WORKERS] [--batch BATCH] [--tileversion TILEVERSION] [--zoom ZOOM] [--file FILE] TILEJSON
 
 Positional arguments:
   TILEJSON               input tilejson file
@@ -57,8 +57,11 @@ Options:
                          output file or directory
   --mbtiles              output mbtiles instead of files (automatically selected if output filename ends in '.mbtiles')
   --dsn DSN, -d DSN      database connection string (dsn) for postgis
+  --init INIT            initialization SQL statement that is sent on connection/session start, for any specific optimizations
   --workers WORKERS, -w WORKERS
-                         number of workers to spawn [default: 48]
+                         number of workers to spawn [default: 72]
+  --batch BATCH, -b BATCH
+                         size of the batch to query and write at once [default: 10]
   --tileversion TILEVERSION
                          version of the tileset (string) written to mbtiles metadata
   --zoom ZOOM            comma-delimited set specific zooms to export (eg: 2,4,6,8)
@@ -70,6 +73,21 @@ Typical usage:
 ```
 baremaps-exporter -o ./tiles/ -d 'postgres://baremaps:baremaps@localhost:5432/baremaps' tiles.json
 ```
+
+## Performance Tuning
+
+By default, the exporter disables JIT since that often slows down large
+numbers of queries required to export high volumes of tiles.
+
+Additional SQL configuration commands may be useful for tuning. These commands
+are executed by the exporter at the start of a connection session and can be
+specified with `--init`.
+
+A particularly useful one is: `SET enable_bitmapscan = off;`. It is common for
+the planner to _think_ that there's a lot of features and prefer bitmap scans
+over going to the geospatial index first. This disables the planner from doing
+that, so it first filters by the features in the geospatial region (tile
+coordinates), and then filters the features within that geospatial region.
 
 ## LICENSE
 
