@@ -51,7 +51,6 @@ func ListTiles(zooms []int, tj *TileJSON) []TileCoords {
 
 // tilesInBbox returns a list of all tiles within that lat/lon bounding box at the specified zoom level
 func tilesInBbox(bbox BoundingBox, zoom int) []TileCoords {
-	fmt.Printf("zoom: %d\n", zoom)
 	xMin := lonToX(bbox.Left, zoom)
 	xMax := lonToX(bbox.Right, zoom)
 	yMin := latToY(bbox.Top, zoom)
